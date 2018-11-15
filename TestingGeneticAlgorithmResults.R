@@ -1,12 +1,19 @@
-library(readr)
-library(ggplot2)
-library(dplyr)
-library(ggrepel)
-library(geosphere)
-library(patchwork)
-library(glue)
+suppressMessages(suppressWarnings(library(readr)))
+suppressMessages(suppressWarnings(library(ggplot2)))
+suppressMessages(suppressWarnings(library(dplyr)))
+suppressMessages(suppressWarnings(library(ggrepel)))
+suppressMessages(suppressWarnings(library(geosphere))) 
+suppressMessages(suppressWarnings(library(patchwork)))
+suppressMessages(suppressWarnings(library(glue)))
+
+oldw <- getOption("warn")
+options(warn = -1)
+options(readr.num_columns = 0)
 
 setwd("C:/Users/Konrad/Desktop/GeneticAlgorithm/")
+
+
+credentials <- config::get(file = "C:/Users/Konrad/Documents/credentials_config.yml")
 
 vehicle_info <- read_csv("Data/df.csv")
 not_working_vehicles <- read_csv("Data/not_working.csv")
@@ -26,7 +33,9 @@ second_route <- join_data_fn("one_third_route.csv")
 third_route <- join_data_fn("two_third_route.csv")
 fourth_route <- join_data_fn("best_route.csv")
 
-workshop_df <- data_frame(lat = 45.512669, lon = -122.659312)
+workshop_df <- data_frame(lon = credentials$location_info$lon, 
+                          lat = credentials$location_info$lat)
+
 
 plot_fn <- function(route_data, graph_title, graph_subtitle) {
   ggplot() + 
@@ -40,12 +49,10 @@ plot_fn <- function(route_data, graph_title, graph_subtitle) {
     theme(axis.text.y = element_blank(),
           axis.ticks.y = element_blank()) +
     ylab("") +
-    ggtitle(label = graph_title,
-            subtitle = graph_subtitle)
-    
+    ggtitle(label = graph_title)
 }
 
-subtitle_fn <- function(graph_number) {
+title_fn <- function(graph_number) {
   iteration = route_idx$X1[graph_number]
   if (iteration == 0) {
     iteration = 1
@@ -56,29 +63,35 @@ subtitle_fn <- function(graph_number) {
   
 }
 
-first_subtitle <- subtitle_fn(1)
-second_subtitle <- subtitle_fn(2)
-third_subtitle <- subtitle_fn(3)
-fourth_subtitle <- subtitle_fn(4)
+first_title <- title_fn(1)
+second_title <- title_fn(2)
+third_title <- title_fn(3)
+fourth_title <- title_fn(4)
 
-first_g <- plot_fn(first_route, graph_title = "Best of First Generation", first_subtitle)
-second_g <- plot_fn(second_route, graph_title = "Best 1/3 Through", second_subtitle)
-third_g <- plot_fn(third_route, graph_title = "Best 2/3 Through", third_subtitle)
-fourth_g <- plot_fn(fourth_route, graph_title = "Best Overall", fourth_subtitle)
+first_g <- plot_fn(first_route, graph_title = first_title)
+second_g <- plot_fn(second_route, graph_title = second_title)
+third_g <- plot_fn(third_route, graph_title = third_title)
+fourth_g <- plot_fn(fourth_route, graph_title = fourth_title)
 
 first_g + second_g + third_g + fourth_g + ggsave("C:/Users/Konrad/Desktop/GeneticAlgorithm/Routes.png", height = 10, width = 12)
 
-trial_summary %>%
-  mutate(time = row_number()) %>%
-  #rename(fitness = X3, 
-  #       distance = X2) %>%
-  mutate(distance = as.numeric(distance),
-         fitness = as.numeric(fitness)) %>%
-  ggplot(aes(time, distance)) +
-  geom_line() + 
-  geom_text(aes(label = fitness, x = time, y = distance)) + 
-  #scale_x_log10() + 
-  theme_bw() + 
-  labs(x = "iteration", y = "distance") + 
-  scale_y_continuous(labels = scales::comma) #+
+modified_trial_summary <- trial_summary %>%
+  mutate(time = row_number() - 1,
+         distance = as.numeric(distance),
+         fitness = as.numeric(fitness)) 
+
+distinct_fitness_times <- modified_trial_summary %>%
+  distinct(fitness, .keep_all = TRUE)
+
+ggplot(modified_trial_summary, aes(time, distance)) +
+  theme_bw() +
+  geom_line() +
+  geom_point(data = distinct_fitness_times, aes(x = time, y = distance)) + 
+  #geom_vline(data = distinct_fitness_times, aes(xintercept = time), linetype = 'dotted') + 
+  geom_text_repel(data = distinct_fitness_times, aes(label = fitness, x = time, y = distance), 
+                  force = 0.5, min.segment.length = 0.25) + 
+  labs(x = "generation", y = "distance") + 
+  scale_y_continuous(labels = scales::comma) +
   ggsave("C:/Users/Konrad/Desktop/GeneticAlgorithm/FitnessOverTime.png", height = 8, width = 12)
+
+options(warn = oldw)
