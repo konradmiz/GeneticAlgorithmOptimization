@@ -6,18 +6,19 @@ os.chdir("C:/Users/Konrad/Desktop/GeneticAlgorithm")
 
 df = pd.read_csv("Data/df.csv")
 dist_m = np.loadtxt(open("Data/dist.csv", "rb"), delimiter=",", skiprows=1)
-#pd.read_csv("C:/Users/Konrad/Desktop/GeneticAlgorithm/dist.csv")
+
 num_bikes = df.shape[0] - 1
+
 bike_dist = np.loadtxt(open("Data/workshopdist.csv", "rb"), delimiter=",", skiprows=1)
-bike_dist = (max(bike_dist) - bike_dist + 1) ** 10
+bike_dist = (max(bike_dist) - bike_dist + 1) ** 10 # seed solutions to start nearby the warehouse first
 bike_prob = bike_dist/bike_dist.sum()
 
 bike_prob /= bike_prob.sum()
-#sum(bike_prob)
+
 class Algorithm():
     def __init__(self, parents, i, bike_prob = bike_prob):
         
-        self.id = str(uuid.uuid1())
+        self.id = str(uuid.uuid1()) #unused
         self.trial_no = i
         self.recom = 0
 
@@ -65,7 +66,6 @@ class Algorithm():
             self.third_bit = parents[0].solution[self.recom_spot_two:]
         
             new_sol = np.concatenate((self.first_bit, self.second_bit, self.third_bit))
-            #np.insert(self.first_bit, obj = self.recom_spot, values = self.second_bit)
             num_trials += 1
         
             if len(new_sol) == len(set(new_sol)) + 1: # success - no duplicate values except 0
@@ -74,7 +74,7 @@ class Algorithm():
             if num_trials == max_trials:
                 return
             
-    def inversion(self, inversion_rate = 0.1):
+    def inversion(self, inversion_rate = 0.01):
         if np.random.uniform() <= inversion_rate:
             if len(self.solution) <= 3:
                 return
@@ -89,7 +89,7 @@ class Algorithm():
             self.solution = np.concatenate((self.first_part, self.second_part))
             self.inversions.append([self.first_part, self.second_part])
         
-    def mutation(self, mutation_rate = 0.5):
+    def mutation(self, mutation_rate = 0.05):
         for i in range(1, len(self.solution) - 1): # can't mutate first or last bit
              # which sites are not in the solution             
             if (np.random.uniform() <= mutation_rate):
@@ -125,7 +125,6 @@ class Algorithm():
 
         if new_gene_rate is None:
             new_gene_rate = 0.08
-            #0.5/len(self.solution)
 
         choices = list(set(list(range(1, num_bikes+1))) - set(self.solution))
         
@@ -156,8 +155,7 @@ class Algorithm():
             current_loc = self.solution[i]
             next_loc = self.solution[i+1]
             
-            #self.dist = self.dist + dist_matrix[(dist_matrix['from'] == current_loc) & (dist_matrix['to'] == next_loc)].dist.item()
-            self.dist = self.dist + dist_matrix[current_loc, next_loc] + 500
+            self.dist = self.dist + dist_matrix[current_loc, next_loc] + 4000
         
         return self.dist
 

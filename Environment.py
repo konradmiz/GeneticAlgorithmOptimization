@@ -7,9 +7,7 @@ Created on Thu Nov 15 15:27:56 2018
 import sys
 sys.path.insert(0, "C:/Users/Konrad/Desktop/GeneticAlgorithm")
 import GA
-#from collections import Counter
-#import pandas as pd
-#from scipy.spatial import distance_matrix
+
 import numpy as np
 import operator
 from scipy.stats import mode
@@ -23,8 +21,8 @@ class Environment():
     def __init__(self, num_bikes, max_dist, 
                  pop_size, reproducing_frac, dist_m = GA.dist_m, bikes_df = GA.df):
         self.algs = []  
-        self.all_sols = []
-        self.gen_best = []
+        self.all_sols = [] # all solutions, currently unused
+        self.gen_best = [] # best in the generation
         self.done_iterations = 0
         self.dist_m = dist_m
         self.df = bikes_df
@@ -34,21 +32,21 @@ class Environment():
         self.pop_size = pop_size
         self.num_reproducing = int(pop_size * reproducing_frac)
         
-        while len(self.algs) < self.pop_size:
+        while len(self.algs) < self.pop_size: #Initializing the population of GAs
             new_alg = GA.Algorithm(parents = False, i = 0)
 
             if new_alg.get_distance(self.dist_m) <= self.max_dist: # feasible solution
                 self.algs.append(new_alg)
         
     def find_parents(self):
-        self.algs = sorted(self.algs, key = operator.attrgetter('dist'))
-        self.algs = sorted(self.algs, key = operator.attrgetter('solution_size'), reverse = True)[:self.num_reproducing-1]
+        # For rank order selection: GAs are sorted DESC by solution_size with tiebreaker being dist ASC
+        self.algs = sorted(self.algs, key = operator.attrgetter('dist')) #sort by dist asc
+        self.algs = sorted(self.algs, key = operator.attrgetter('solution_size'), reverse = True)[:self.num_reproducing-1] #sort by solution length
             
     def next_generation(self, i):
         pot_par = self.algs[:]
-        self.infeasible = 0
-        #total_fitness = sum([p.get_fitness() for p in pot_par])
-        #repr_prob = [p.get_fitness()/total_fitness for p in pot_par]
+        self.infeasible = 0 # count infeasible solutions over simulation
+
         num_par = len(pot_par)
         repr_prob = sorted(list(range(0, num_par)), reverse = True)
         repr_prob_sum = sum(repr_prob)
@@ -71,13 +69,13 @@ class Environment():
     def summarize_generations(self, i):
         num_algs = len(self.algs)
         avg_fitness = round(sum([a.get_fitness() for a in self.algs])/num_algs, 3)
-        #avg_distance = round(sum(a.get_distance(self.dist_m) for a in self.algs)/num_algs, 3)
         
         best_fitness = max([a.get_fitness() for a in self.algs])
         best_fitness_dist = round(min([a.get_distance(self.dist_m) for a in self.algs if a.get_fitness() == best_fitness]), 3)
         mode_fitness = mode([len(a.solution) for a in self.algs], axis = None)[0]
         array_list = [a.solution for a in self.algs if len(a.solution) == mode_fitness]
         self.summary[i] = best_fitness_dist
+        
         if mode_fitness:
             avg_entropy = calculate_entropy(array_list)/(mode_fitness - 2) # start and end are fixed  \
         else:
@@ -88,20 +86,16 @@ class Environment():
     def run_simulation(self, num_iter, max_time):
         start_time = time.time()
         self.summary = np.zeros(shape = num_iter+1)
-        self.all_algs = []
-        #self.unique_sols = np.zeros(num_iter)       
+        #self.all_algs = []
+    
         for i in range(num_iter):
             self.summarize_generations(i)    
-            self.all_algs.append(self.algs)
-            #current_solutions = [a.solution for a in self.algs]
-            #self.all_sols.append(current_solutions)
-            #current_all_sols = [a for b in self.all_sols for a in b]
-            #self.unique_sols[i] = len(Counter(tuple(a) for a in current_all_sols))
+            #self.all_algs.append(self.algs)
             self.find_parents()
             self.next_generation(i)
- #           self.summarize_generations(i)
             self.gen_best.append(self.get_best())
             self.done_iterations += 1
+            
             if time.time() - start_time >= max_time:
                 return
 

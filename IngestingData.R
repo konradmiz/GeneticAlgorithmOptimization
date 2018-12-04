@@ -6,10 +6,10 @@ suppressMessages(suppressWarnings(library(geosphere)))
 suppressMessages(suppressWarnings(library(readr)))
 suppressMessages(suppressWarnings(library(docopt)))
 
-oldw <- getOption("warn")
+oldw <- getOption("warn") # change warnings in code to not be displayed
 options(warn = -1)
 
-
+# Docopt code
 'Usage:
    settingupGAdata.R [-v <variable>]
 
@@ -35,8 +35,8 @@ if (opts$v == "scooters") {
 
   vehicle_data <- dbGetQuery(con, "SELECT * FROM scooters WHERE time = (SELECT MAX(TIME) FROM scooters);") %>%
     filter(battery_level <= 30) %>%
-    mutate(id = as.numeric(id),
-           id = 1:nrow(.))
+    mutate(id = 1:nrow(.))
+  
   dbDisconnect(con)
   
 } else {
@@ -60,15 +60,16 @@ not_working_vehicles %>%
 vehicle_info <- not_working_vehicles %>%
   arrange(id) %>%
   mutate(id_no = 1:nrow(.) - 1) %>%
-  st_as_sf(coords = c("lon", "lat"), crs = 4326) %>%
-  st_transform(26910) 
+  st_as_sf(coords = c("lon", "lat"), crs = 4326) %>% #define spatial object, with lat/lon proj
+  st_transform(26910) #reproject to UTM
 
 vehicle_coords <- vehicle_info %>%
-  st_coordinates()
+  st_coordinates() # get the coordinates of the vehicles
 
 vehicle_info %>%
   write_csv("Data/df.csv")
   
+#create Manhattan distance matrix, cast into dataframe
 dist_m <- melt(as.matrix(dist(vehicle_coords, diag = TRUE, upper = TRUE, method = "manhattan")), 
                varnames = c("from", "to")) %>%
   rename(dist = value) %>%
@@ -81,6 +82,7 @@ colnames(dist_m) <- vehicle_info$id_no
 
 write_csv(dist_m, "Data/dist.csv")
 
+#Get the distances of each bike to the warehouse
 bike_dist <- sapply(2:nrow(vehicle_coords), function(x)  {
   abs(vehicle_coords[1, 1] - vehicle_coords[x, 1]) + abs(vehicle_coords[1, 2] - vehicle_coords[x, 2])}) %>%
   data_frame() %>% 

@@ -6,7 +6,7 @@ suppressMessages(suppressWarnings(library(geosphere)))
 suppressMessages(suppressWarnings(library(patchwork)))
 suppressMessages(suppressWarnings(library(glue)))
 
-oldw <- getOption("warn")
+oldw <- getOption("warn") # change warning settings to not warn
 options(warn = -1)
 options(readr.num_columns = 0)
 
@@ -19,7 +19,7 @@ not_working_vehicles <- read_csv("Data/not_working.csv")
 route_idx <- read_csv("Results/route_numbers.csv", col_names = FALSE)
 trial_summary <- read_csv("Results/summary.csv", col_names = TRUE)
 
-join_data_fn <- function(file_path) {
+join_data_fn <- function(file_path) { # join the routes to their proper vehicle ids used by Biketown
   read_csv(paste0("Results/", file_path), col_names = FALSE) %>%
     left_join(vehicle_info, by = c("X1" = "id_no")) %>%
     left_join(not_working_vehicles, by = "id")
@@ -39,14 +39,12 @@ plot_fn <- function(route_data, graph_title, graph_subtitle) {
   ggplot() + 
     geom_point(data = workshop_df, aes(lon, lat), shape = 1) + 
     geom_point(data = not_working_vehicles, aes(lon, lat), col = "red", size = 1) + 
-    #geom_text_repel(data = not_working_bikes, aes(lon, lat, label = id)) +
     geom_point(size = 3) + 
     theme_bw() +
     geom_segment(data = route_data, aes(x = lon, xend = dplyr::lead(lon), y = lat, yend = dplyr::lead(lat)), #arrow = arrow(), 
                  color = "#566427", size = 1) + 
-    theme(axis.text.y = element_blank(),
-          axis.ticks.y = element_blank()) +
-    ylab("fitness") +
+    theme(axis.ticks.y = element_blank()) +
+    ylab("lat") +
     ggtitle(label = graph_title)
 }
 
@@ -71,7 +69,10 @@ second_g <- plot_fn(second_route, graph_title = second_title)
 third_g <- plot_fn(third_route, graph_title = third_title)
 fourth_g <- plot_fn(fourth_route, graph_title = fourth_title)
 
+fourth_g + ggsave("Images/FinalRoute.png", height = 10, width = 12)
+
 first_g + second_g + third_g + fourth_g + ggsave("Images/Routes.png", height = 10, width = 12)
+
 
 modified_trial_summary <- trial_summary %>%
   mutate(time = row_number() - 1,
@@ -85,7 +86,6 @@ ggplot(modified_trial_summary, aes(time, distance)) +
   theme_bw() +
   geom_line() +
   geom_point(data = distinct_fitness_times, aes(x = time, y = distance)) + 
-  #geom_vline(data = distinct_fitness_times, aes(xintercept = time), linetype = 'dotted') + 
   geom_text_repel(data = distinct_fitness_times, aes(label = fitness, x = time, y = distance), 
                   force = 0.5, min.segment.length = 0.25) + 
   labs(x = "generation", y = "distance") + 
