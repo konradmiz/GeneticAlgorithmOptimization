@@ -2,7 +2,7 @@
 
 Building a flexible GA from scratch in Python to solve an optimization problem relating to bike maintenance. 
 
-**Of note: this code will not run, as I have not included database credentials to this repo. Proxy data may be uploaded sometime in the future.**  
+**Of note: this code will not run, as I have not included database credentials to this repo. Proxy data may be uploaded sometime in the future. Additionally, the filepaths are hard-coded in.**  
 
 ## Workflow
 
@@ -18,7 +18,7 @@ RunningGA.ps1 is the PowerShell script that runs the simulation, i.e. these scri
 
 Two additional Python modules exist, that define the GA (GA.py) and the environment/population of GAs (Environment.py). 
 
-These files all assume a directory called GeneticAlgorithm, with Data, Results, and Images subfolders. Since this was a solo project the paths are hard-coded in. 
+These files all assume a directory called GeneticAlgorithm, with Data, Results, and Images subfolders. 
 
 ## Additional code
 
