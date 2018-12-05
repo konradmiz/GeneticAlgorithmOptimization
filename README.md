@@ -2,11 +2,13 @@
 
 Building a flexible GA from scratch in Python to solve an optimization problem relating to bike maintenance. 
 
+**Of note: this code will not run, as I have not included database credentials to this repo. Proxy data may be uploaded sometime in the future.**  
+
 ## Workflow
 
 All relevant code is in the top-level directory. 
 
-RunningGA.ps1 is the PowerShell script that runs scripts for 
+RunningGA.ps1 is the PowerShell script that runs the simulation, i.e. these scripts:
 
 * ingesting data (IngestingData.R)
 
