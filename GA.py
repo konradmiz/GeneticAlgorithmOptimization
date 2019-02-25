@@ -1,24 +1,23 @@
 import numpy as np
-import pandas as pd
-import uuid
-import os
-os.chdir("C:/Users/Konrad/Desktop/GeneticAlgorithm")
-
-df = pd.read_csv("Data/df.csv")
-dist_m = np.loadtxt(open("Data/dist.csv", "rb"), delimiter=",", skiprows=1)
-
-num_bikes = df.shape[0] - 1
-
-bike_dist = np.loadtxt(open("Data/workshopdist.csv", "rb"), delimiter=",", skiprows=1)
-bike_dist = (max(bike_dist) - bike_dist + 1) ** 10 # seed solutions to start nearby the warehouse first
-bike_prob = bike_dist/bike_dist.sum()
-
-bike_prob /= bike_prob.sum()
+import Environment
 
 class Algorithm():
-    def __init__(self, parents, i, bike_prob = bike_prob):
+    """ Solution object of GA type
+    
+    GAs are initialized either through the recombination of the genotypes of
+    the two parents, or through a random solution selection process. The solutions
+    are mutated, inverted, and new genes may be added to force longer and 
+    longer solutions over time. 
+    
+    """
+    
+    def __init__(self, parents, i, bike_prob = Environment.BIKE_PROB):
+        """ Creates a new genetic algorithm solution
         
-        self.id = str(uuid.uuid1()) #unused
+        If there are no parents, generate the solution randomly. Otherwise,
+        recombine the solutions of the parents and mutate and invert the genes
+        
+        """
         self.trial_no = i
         self.recom = 0
 
@@ -28,13 +27,13 @@ class Algorithm():
         self.inversions = []
         
         if not parents:
-            self.random_generation(bike_prob)
+            self.random_generation(Environment.BIKE_PROB)
         else:
             self.parents = parents
             self.solution = self.recombination(parents)
             
             if self.solution is None:
-                self.random_generation(bike_prob)        
+                self.random_generation(Environment.BIKE_PROB)        
             else:
                 self.mutation()
                 self.inversion()
@@ -42,16 +41,30 @@ class Algorithm():
         
         self.new_gene()
     
-    def random_generation(self, bike_prob = bike_prob):
+    def random_generation(self, bike_prob = Environment.BIKE_PROB):
+        """ Create a random solution chromosome
+        
+        If there are no parents (first generation or recombination didn't work),
+        create a new solution of random length. 
+        
+        """
+        
         self.parents = []
         
-        self.solution_size = np.random.randint(low = 0, high = num_bikes+1)
-        self.solution = np.random.choice(list(range(1, num_bikes+1)), p = bike_prob, size = self.solution_size, replace = False)
+        self.solution_size = np.random.randint(low = 0, high = Environment.NUM_BIKES + 1)
+        self.solution = np.random.choice(list(range(1, Environment.NUM_BIKES + 1)), 
+                                         p = bike_prob, size = self.solution_size, replace = False)
+        
         self.solution = np.insert(self.solution, obj = 0, values = 0)
         self.solution = np.insert(self.solution, obj = len(self.solution), values = 0)
        
     def recombination(self, parents):
-        max_trials = 5
+        """ Two-point crossover
+        
+        Try to recombine the chromosomes of parents. Double recombination used.
+        """
+        
+        max_trials = 4
         num_trials = 0
         
         while True:
@@ -75,6 +88,12 @@ class Algorithm():
                 return
             
     def inversion(self, inversion_rate = 0.01):
+        """ Gene inversion
+        
+        One-point inversion of solution. Invert the second part of the solution
+        and conatenate it to the first part.
+        """ 
+        
         if np.random.uniform() <= inversion_rate:
             if len(self.solution) <= 3:
                 return
@@ -90,19 +109,28 @@ class Algorithm():
             self.inversions.append([self.first_part, self.second_part])
         
     def mutation(self, mutation_rate = 0.05):
+        """ Mutate the solution
+        
+        Gene by gene, attempt a mutation with probability of mutation_rate.
+        If a mutation is chosen, and if there are nodes not within the solution,
+        choose either to swap two genes, or choose a gene not in the solution
+        and swap out with the current gene
+        
+        """
+        
         for i in range(1, len(self.solution) - 1): # can't mutate first or last bit
              # which sites are not in the solution             
             if (np.random.uniform() <= mutation_rate):
-                choices = list(set(list(range(1, num_bikes+1))) - set(self.solution))
+                choices = list(set(list(range(1, Environment.NUM_BIKES + 1))) - set(self.solution))
                 
                 if (len(choices) > 0) & (np.random.random() <= 0.5):
                     
                     extra_dist = np.zeros(shape = len(choices))
 
                     for j, b in enumerate(choices):
-                        extra_dist[j] = dist_m[self.solution[i-1], choices[j]] + \
-                                        dist_m[choices[j], self.solution[i]] - \
-                                        dist_m[self.solution[i-1], self.solution[i]]
+                        extra_dist[j] = Environment.DIST_M[self.solution[i-1], choices[j]] + \
+                                        Environment.DIST_M[choices[j], self.solution[i]] - \
+                                        Environment.DIST_M[self.solution[i-1], self.solution[i]]
                                         
                     extra_dist_magnified = (max(extra_dist) - extra_dist + 1) ** 10
                     extra_dist_final = extra_dist_magnified/extra_dist_magnified.sum()
@@ -122,11 +150,16 @@ class Algorithm():
                     self.swaps.append([gene_1, gene_2])
             
     def new_gene(self, new_gene_rate = None):
+        """ Add a gene to the solution
+        
+        If there are nodes not visited by the current solution, attempt to add
+        a new gene to the solution with rate new_gene_rate
+        """
 
         if new_gene_rate is None:
             new_gene_rate = 0.08
 
-        choices = list(set(list(range(1, num_bikes+1))) - set(self.solution))
+        choices = list(set(list(range(1, Environment.NUM_BIKES + 1))) - set(self.solution))
         
         if (np.random.uniform() <= new_gene_rate) and (len(choices) > 0):
             new_gene_loc = np.random.randint(1, len(self.solution)) # can't insert into first or last
@@ -134,11 +167,13 @@ class Algorithm():
             extra_dist = np.zeros(shape = len(choices))
 
             for i, b in enumerate(choices):
-                #print(i,b)
-                extra_dist[i] = dist_m[self.solution[new_gene_loc-1], choices[i]] + \
-                                dist_m[choices[i], self.solution[new_gene_loc]] - \
-                                dist_m[self.solution[new_gene_loc-1], self.solution[new_gene_loc]]
+                extra_dist[i] = Environment.DIST_M[self.solution[new_gene_loc-1], choices[i]] + \
+                                Environment.DIST_M[choices[i], self.solution[new_gene_loc]] - \
+                                Environment.DIST_M[self.solution[new_gene_loc-1], self.solution[new_gene_loc]]
+                              
                                 
+            # Choose a new gene. Make it very likely that the new gene is close
+            # to a gene that already exists. 
             extra_dist_magnified = (max(extra_dist) - extra_dist + 1) ** 10
             extra_dist_final = extra_dist_magnified/extra_dist_magnified.sum()
             
@@ -149,13 +184,20 @@ class Algorithm():
             self.solution_size += 1
     
     def get_distance(self, dist_matrix):
+        """Return the distance that the solution takes
+        
+        Returns the distance that the solution takes, taking into account the 
+        'lost' distance that stopping to pick up a scooter takes (stop time and
+        average speed)
+        
+        """
         self.dist = 0
         
         for i in range(0, len(self.solution) - 1):
             current_loc = self.solution[i]
             next_loc = self.solution[i+1]
             
-            self.dist = self.dist + dist_matrix[current_loc, next_loc] + 4000
+            self.dist = self.dist + dist_matrix[current_loc, next_loc] + Environment.STOP_TIME * Environment.AVG_SPEED
         
         return self.dist
 

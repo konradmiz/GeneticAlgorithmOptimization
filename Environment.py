@@ -4,6 +4,9 @@ Created on Thu Nov 15 15:27:56 2018
 
 @author: Konrad
 """
+import os
+os.chdir("C:/Users/Konrad/Desktop/GeneticAlgorithm")
+
 import sys
 sys.path.insert(0, "C:/Users/Konrad/Desktop/GeneticAlgorithm")
 import GA
@@ -11,23 +14,43 @@ import GA
 import numpy as np
 import operator
 from scipy.stats import mode
-from math import log
 import time
+import pandas as pd
+import helpers
 
-num_bikes = GA.num_bikes
+DF = pd.read_csv("Data/df.csv")
+DIST_M = np.loadtxt(open("Data/dist.csv", "rb"), delimiter=",", skiprows=1)
+
+NUM_BIKES = DF.shape[0] - 1
+
+bike_dist = np.loadtxt(open("Data/workshopdist.csv", "rb"), delimiter=",", skiprows=1)
+bike_dist = (max(bike_dist) - bike_dist + 1) ** 10 # seed solutions to start nearby the warehouse first
+BIKE_PROB = bike_dist/bike_dist.sum()
+
+BIKE_PROB /= BIKE_PROB.sum()
+
+STOP_TIME = 10 # minutes picking up a scooter
+AVG_SPEED = 400 # meters/minute average speed
+
 
 class Environment():
-       
-    def __init__(self, num_bikes, max_dist, 
-                 pop_size, reproducing_frac, dist_m = GA.dist_m, bikes_df = GA.df):
+    """ Creates an environment for the GAs to find solutions. 
+    
+    Takes in a maximum distance for the solution, the number of GAs, and
+    how many of the GAs reproduce. 
+    
+    """
+    
+    def __init__(self, max_dist, 
+                 pop_size, reproducing_frac):
         self.algs = []  
         self.all_sols = [] # all solutions, currently unused
         self.gen_best = [] # best in the generation
         self.done_iterations = 0
-        self.dist_m = dist_m
-        self.df = bikes_df
+        self.dist_m = DIST_M
+        self.df = DF
         
-        self.num_bikes = num_bikes
+        self.num_bikes = NUM_BIKES
         self.max_dist = max_dist
         self.pop_size = pop_size
         self.num_reproducing = int(pop_size * reproducing_frac)
@@ -77,7 +100,7 @@ class Environment():
         self.summary[i] = best_fitness_dist
         
         if mode_fitness:
-            avg_entropy = calculate_entropy(array_list)/(mode_fitness - 2) # start and end are fixed  \
+            avg_entropy = helpers.calculate_entropy(array_list)/(mode_fitness - 2) # start and end are fixed  \
         else:
             avg_entropy = np.NaN
         print("Iteration: {}\t AvgFitness: {}\t Best Fitness: {}\t BestDistance: {}\t Avg Entropy:{}"
@@ -86,11 +109,9 @@ class Environment():
     def run_simulation(self, num_iter, max_time):
         start_time = time.time()
         self.summary = np.zeros(shape = num_iter+1)
-        #self.all_algs = []
     
         for i in range(num_iter):
             self.summarize_generations(i)    
-            #self.all_algs.append(self.algs)
             self.find_parents()
             self.next_generation(i)
             self.gen_best.append(self.get_best())
@@ -106,18 +127,3 @@ class Environment():
         
         return best_sol, best_fitness, min_dist, best_sol.solution
 
-def calculate_entropy(array_list): # adapted from https://stackoverflow.com/questions/15450192/fastest-way-to-compute-entropy-in-python
-    ent = 0.
-    
-    if len(array_list) < 2:
-        return 0
-    
-    for i in range(len(array_list[0])):
-        entry = [a[i] for a in array_list]
-        value,counts = np.unique(entry, return_counts=True)
-        probs = counts / len(entry)
-        
-        for i in probs:
-            ent -= i * log(i, 2)
-
-    return round(ent, 3)

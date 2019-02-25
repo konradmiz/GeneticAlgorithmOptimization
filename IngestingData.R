@@ -33,14 +33,14 @@ con <- dbConnect(drv = RPostgreSQL::PostgreSQL(),
 
 if (opts$v == "scooters") {
 
-  vehicle_data <- dbGetQuery(con, "SELECT * FROM scooters WHERE time = (SELECT MAX(TIME) FROM scooters);") %>%
+  vehicle_data <- dbGetQuery(con, "SELECT * FROM scooters WHERE time = (SELECT time FROM scooters ORDER BY RANDOM() LIMIT 1);") %>%
     filter(battery_level <= 30) %>%
     mutate(id = 1:nrow(.))
   
   dbDisconnect(con)
   
 } else {
-  vehicle_data <- dbGetQuery(con, "SELECT * FROM bikes WHERE time = (SELECT MAX(TIME) FROM bikes);") %>%
+  vehicle_data <- dbGetQuery(con, "SELECT * FROM current_bikes;") %>%
     filter(repair_state != "working")
   
   dbDisconnect(con)

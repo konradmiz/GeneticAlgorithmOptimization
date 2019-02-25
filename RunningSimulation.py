@@ -6,7 +6,6 @@ Created on Thu Nov 15 15:29:06 2018
 """
 #import sys
 import os
-
 import numpy as np
 import pandas as pd
 
@@ -14,6 +13,7 @@ import argparse
 os.chdir("C:/Users/Konrad/Desktop/GeneticAlgorithm")
 import GA
 import Environment as ENV
+import helpers
 
 parser = argparse.ArgumentParser(description='Input max distance and number of trials')
 
@@ -36,7 +36,7 @@ pop_size = args.pop_size if args.pop_size else 100
 max_time = args.max_time if args.max_time else 180
 reproducing_frac = args.repr_frac if args.repr_frac else 0.15
 
-one_trial = ENV.Environment(num_bikes = GA.num_bikes, pop_size = pop_size,
+one_trial = ENV.Environment(pop_size = pop_size,
                             max_dist = max_dist, reproducing_frac = reproducing_frac)
 
 one_trial.run_simulation(num_iter = num_iter, max_time = max_time)

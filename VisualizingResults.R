@@ -43,7 +43,9 @@ plot_fn <- function(route_data, graph_title, graph_subtitle) {
     theme_bw() +
     geom_segment(data = route_data, aes(x = lon, xend = dplyr::lead(lon), y = lat, yend = dplyr::lead(lat)), #arrow = arrow(), 
                  color = "#566427", size = 1) + 
-    theme(axis.ticks.y = element_blank()) +
+    theme(axis.ticks.y = element_blank(),
+          axis.text = element_text(size = 16),
+          axis.title = element_text(size = 16)) +
     ylab("lat") +
     ggtitle(label = graph_title)
 }
