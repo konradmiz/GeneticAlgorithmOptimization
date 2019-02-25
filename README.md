@@ -8,7 +8,7 @@ Building a flexible GA from scratch in Python to solve an optimization problem r
 
 All relevant code is in the top-level directory. 
 
-RunningGA.ps1 is the PowerShell script that runs the simulation, i.e. these scripts:
+running_ga.ps1 is the PowerShell script that runs the simulation, i.e. these scripts:
 
 * ingesting data (IngestingData.R)
 
